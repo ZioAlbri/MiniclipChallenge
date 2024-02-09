@@ -10,7 +10,9 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-    challenge_sup:start_link().
+    challenge_sup:start_link(),
+    server:start(),
+    ok.
 
 stop(_State) ->
     ok.
