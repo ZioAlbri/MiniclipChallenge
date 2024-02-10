@@ -17,7 +17,8 @@ handle_connection(Socket) ->
         {ok, ClientName} ->
             %% Process the received client name
             io:format("Connected: ~s~n", [ClientName]),
-            gen_tcp:send(Socket, "Write a message: "),
+            gen_tcp:send(Socket, "What do you want to do? Type: "),
+            gen_tcp:send(Socket, "c -> Create a new room;"),
             %% Keep handling data from the connected client
             handle_data(Socket, ClientName);
         {error, Reason} ->
@@ -36,10 +37,7 @@ get_client_name(Socket) ->
 handle_data(Socket, ClientName) ->
     case gen_tcp:recv(Socket, 0) of
         {ok, Data} ->
-            %% Process the received data along with the client's name
-            io:format("Received from ~s: ~s~n", [ClientName, Data]),
-            gen_tcp:send(Socket, "Data received successfully. Write the next message: "),
-            handle_data(Socket, ClientName); %% Continue handling the connection
+            manage_command(Socket, Data, ClientName);
         {error, closed} ->
             %% Connection closed by the client
             io:format("Connection closed by ~s~n", [ClientName]),
@@ -48,4 +46,16 @@ handle_data(Socket, ClientName) ->
             %% Handle errors
             io:format("Error for ~s: ~p~n", [ClientName, Reason]),
             ok %% Terminate the handling process
+    end.
+
+manage_command(Socket, Data, ClientName) ->
+    Command = string:trim(binary_to_list(Data)),
+    io:format("Received command ~s from ~p", [Command, ClientName]),
+    case Command of
+        "c" -> 
+            {ok, UpdatedRoomManager} = room_manager:create_room(ClientName),
+            gen_tcp:send(Socket, "Room created.");
+            %%room_manager:loop(UpdatedRoomManager);
+        _ ->
+            gen_tcp:send(Socket, "Wrong command. Please try again.")
     end.

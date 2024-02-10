@@ -11,6 +11,7 @@
 
 start(_StartType, _StartArgs) ->
     challenge_sup:start_link(),
+    room_manager:init(),
     server:start(),
     ok.
 
