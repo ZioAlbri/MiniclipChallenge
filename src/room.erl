@@ -1,5 +1,5 @@
 -module(room).
--export([new/2, get_id/1, get_owner/1, get_members/1, join/3, leave/3]).
+-export([new/2, get_id/1, get_owner/1, get_members_names/1, get_members_sockets/1, join/3, leave/3]).
 
 new(OwnerName, Socket) ->
     {room, erlang:unique_integer([positive, monotonic]), {OwnerName, Socket}, [{OwnerName, Socket}]}.
@@ -10,8 +10,11 @@ get_id({room, Id, _, _}) ->
 get_owner({room, _, {OwnerName, _}, _}) ->
     OwnerName.
 
-get_members({room, _, _, Members}) ->
+get_members_names({room, _, _, Members}) ->
     [UserName || {UserName, _} <- Members].
+
+get_members_sockets({room, _, _, Members}) ->
+    [Socket || {_, Socket} <- Members].
 
 join(UserName, Socket, {room, Id, Owner, Members}) ->
     case lists:member({UserName, Socket}, Members) of

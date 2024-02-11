@@ -7,6 +7,7 @@
         l -> List all rooms;
         j -> Join an existing room;
         q -> Leave a joined room;
+        m -> Send message in a room;
         ").
 
 start() ->
@@ -142,8 +143,32 @@ manage_leaveroom_command(Socket, ClientName) ->
     end.
 
 manage_sendmessage_command(Socket, ClientName) ->
-    ok.
+    send_string(Socket, "Type the id of the room: "),
+    {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
+        RoomSockets = room_manager:get_room_sockets(RoomId),
+        case RoomSockets of
+            {ok, Sockets} ->
+                send_string(Socket, "Type the message you want to send: "),
+                {ok, MessageData} = gen_tcp:recv(Socket, 0),
+                Message = ClientName ++ " from room " ++ integer_to_list(RoomId) ++ " says: " ++binary_to_list(MessageData), % 
+                send_strings(Sockets, Message),
+                send_string(Socket, "Message sent. ");
+            not_found ->
+                send_string(Socket, "Can't find the room. Try with another id. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as room id. ")
+    end.
 
+
+send_strings([], Message) ->
+    ok;  % Base case: empty list
+send_strings([Socket | Rest], Message) ->
+    send_string(Socket, Message),
+    send_strings(Rest, Message).
 
 send_string(Socket, Value) ->
     gen_tcp:send(Socket, Value).

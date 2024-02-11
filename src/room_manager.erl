@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/3, leave_room/3, get_rooms/0]).
+-export([init/0, create_room/2, destroy_room/2, join_room/3, leave_room/3, get_room_sockets/1, get_rooms/0]).
 
 
 init() ->
@@ -62,6 +62,16 @@ leave_room(User, Socket, RoomId) ->
             ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~s has left room ~p~n", [User, Room]),
             ok;
+        not_found ->
+            not_found
+    end.
+
+
+get_room_sockets(RoomId) ->
+    case find_room_by_id(RoomId) of
+        {ok, Room} ->
+            Sockets = room:get_members_sockets(Room),
+            {ok, Sockets};
         not_found ->
             not_found
     end.
