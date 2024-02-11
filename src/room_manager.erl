@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/1, join_room/2, get_rooms/0]).
+-export([init/0, create_room/1, destroy_room/2, join_room/2, get_rooms/0]).
 
 
 init() ->
@@ -18,6 +18,37 @@ create_room(Owner) ->
     ets:insert(rooms, {Id, Room}),
     io:format("User ~s has created room ~p~n", [Owner, Room]),
     ok.
+
+
+destroy_room(Owner, RoomId) ->
+    case find_room_by_id(RoomId) of
+        {ok, Room} ->
+            io:format("Found room: ~p~n", [Room]),
+            RoomOwner = room:get_owner(Room),
+            Result = if
+                RoomOwner == Owner ->
+                    io:format("Destroying room with Id ~p~n", [RoomId]),
+                    ets:delete(rooms, RoomId), 
+                    io:format("User ~s has destroyed room ~p~n", [Owner, Room]),
+                    ok;
+                true ->
+                    % Do nothing or perform a different action for non-matching owner
+                    io:format("Owner ~p does not match expected owner ~p. No action performed.~n", [Owner, RoomOwner]),
+                    non_matching
+            end,
+            Result;
+        not_found ->
+            io:format("Room not found.~n"),
+            not_found        
+    end.
+
+find_room_by_id(RoomId) ->
+    case ets:lookup(rooms, RoomId) of
+        [{RoomId, Room}] ->
+            {ok, Room};
+        [] ->
+            not_found
+    end.
 
 
 join_room(User, RoomId) ->

@@ -3,7 +3,9 @@
 
 -define(COMMANDS, "What do you want to do? Type: 
         c -> Create a new room;
-        l -> List all rooms;").
+        d -> Destroy a room you own;
+        l -> List all rooms;
+        ").
 
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(12345, [binary, {active, false}]),
@@ -55,18 +57,49 @@ handle_data(Socket, ClientName) ->
             ok %% Terminate the handling process
     end.
 
+
+
 manage_command(Socket, Data, ClientName) ->
     Command = string:trim(binary_to_list(Data)),
     io:format("Received command ~s from ~p~n", [Command, ClientName]),
     case Command of
         "c" -> 
-            room_manager:create_room(ClientName),
-            send_string(Socket, "Room created.");
+            manage_createroom_command(Socket, ClientName);
+        "d" -> 
+            manage_deleteroom_command(Socket, ClientName);
         "l" -> 
-            send_string(Socket, room_manager:get_rooms());
+            manage_listrooms_command(Socket);
         _ ->
             send_string(Socket, "Wrong command. Please try again.")
     end.
+
+manage_createroom_command(Socket, ClientName) ->
+    room_manager:create_room(ClientName),
+    send_string(Socket, "Room created.").
+
+manage_deleteroom_command(Socket, ClientName) ->
+    send_string(Socket, "Type the id of the room you want to destroy: "),
+    {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
+        Result = room_manager:destroy_room(ClientName, RoomId),
+        case Result of
+            ok ->
+                send_string(Socket, "Room destroyed. ");
+            non_matching ->
+                send_string(Socket, "You can't destroy rooms you don't own! ");
+            not_found ->
+                send_string(Socket, "Can't find the room. Try with another id. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as room id. ")
+    end.
+
+manage_listrooms_command(Socket) ->
+    send_string(Socket, room_manager:get_rooms()).
+
+
 
 send_string(Socket, Value) ->
     gen_tcp:send(Socket, Value).
