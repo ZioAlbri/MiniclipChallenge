@@ -1,6 +1,10 @@
 -module(server).
 -export([start/0, handle_connection/1]).
 
+-define(COMMANDS, "What do you want to do? Type: 
+        c -> Create a new room;
+        l -> List all rooms;").
+
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(12345, [binary, {active, false}]),
     io:format("Server listening on port 12345... ~n~n"),
@@ -20,7 +24,6 @@ handle_connection(Socket) ->
             %% Process the received client name
             ClientName = string:trim(binary_to_list(Data)),
             io:format("Connected: ~s~n", [ClientName]),
-            send_commands(Socket),
             %% Keep handling data from the connected client
             handle_data(Socket, ClientName);
         {error, Reason} ->
@@ -31,12 +34,12 @@ handle_connection(Socket) ->
 
 get_client_name(Socket) ->
     %% Prompt the client for their name
-    gen_tcp:send(Socket, "Enter your name: "),
-    
+    send_string(Socket, "Enter your name: "),
     %% Receive the client's name
     gen_tcp:recv(Socket, 0).
 
 handle_data(Socket, ClientName) ->
+    send_string(Socket, ?COMMANDS),
     case gen_tcp:recv(Socket, 0) of
         {ok, Data} ->
             manage_command(Socket, Data, ClientName),
@@ -58,12 +61,12 @@ manage_command(Socket, Data, ClientName) ->
     case Command of
         "c" -> 
             room_manager:create_room(ClientName),
-            gen_tcp:send(Socket, "Room created.");
+            send_string(Socket, "Room created.");
+        "l" -> 
+            send_string(Socket, room_manager:get_rooms());
         _ ->
-            gen_tcp:send(Socket, "Wrong command. Please try again.")
-    end,
-    send_commands(Socket).
+            send_string(Socket, "Wrong command. Please try again.")
+    end.
 
-send_commands(Socket) ->
-    gen_tcp:send(Socket, "What do you want to do? Type: 
-        c -> Create a new room;").
+send_string(Socket, Value) ->
+    gen_tcp:send(Socket, Value).
