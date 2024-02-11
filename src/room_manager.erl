@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/1, destroy_room/2, join_room/2, get_rooms/0]).
+-export([init/0, create_room/1, destroy_room/2, join_room/2, leave_room/2, get_rooms/0]).
 
 
 init() ->
@@ -49,6 +49,18 @@ join_room(User, RoomId) ->
             UpdatedRoom = room:join(User, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~s has joined room ~p~n", [User, Room]),
+            ok;
+        not_found ->
+            not_found
+    end.
+
+
+leave_room(User, RoomId) ->
+    case find_room_by_id(RoomId) of
+        {ok, Room} ->
+            UpdatedRoom = room:leave(User, Room),
+            ets:insert(rooms, {RoomId, UpdatedRoom}),
+            io:format("User ~s has left room ~p~n", [User, Room]),
             ok;
         not_found ->
             not_found

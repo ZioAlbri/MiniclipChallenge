@@ -1,5 +1,5 @@
 -module(room).
--export([new/1, get_id/1, get_owner/1, get_members/1, join/2]).
+-export([new/1, get_id/1, get_owner/1, get_members/1, join/2, leave/2]).
 
 new(Owner) ->
     {room, erlang:unique_integer([positive, monotonic]), Owner, [Owner]}.
@@ -21,3 +21,7 @@ join(User, {room, Id, Owner, Members}) ->
             % Add a user only if it's not already Member
             {room, Id, Owner, [User | Members]}
     end.
+
+leave(User, {room, Id, Owner, Members}) ->
+    UpdatedMembers = lists:delete(User, Members),
+    {room, Id, Owner, UpdatedMembers}.
