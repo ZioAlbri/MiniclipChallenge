@@ -5,6 +5,7 @@
         c -> Create a new room;
         d -> Destroy a room you own;
         l -> List all rooms;
+        j -> Join an existing room;
         ").
 
 start() ->
@@ -69,6 +70,8 @@ manage_command(Socket, Data, ClientName) ->
             manage_deleteroom_command(Socket, ClientName);
         "l" -> 
             manage_listrooms_command(Socket);
+        "j" -> 
+            manage_joinroom_command(Socket, ClientName);
         _ ->
             send_string(Socket, "Wrong command. Please try again.")
     end.
@@ -99,7 +102,22 @@ manage_deleteroom_command(Socket, ClientName) ->
 manage_listrooms_command(Socket) ->
     send_string(Socket, room_manager:get_rooms()).
 
-
+manage_joinroom_command(Socket, ClientName) ->
+    send_string(Socket, "Type the id of the room you want to join: "),
+    {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
+        Result = room_manager:join_room(ClientName, RoomId),
+        case Result of
+            ok ->
+                send_string(Socket, "Room joined. ");
+            not_found ->
+                send_string(Socket, "Can't find the room. Try with another id. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as room id. ")
+    end.
 
 send_string(Socket, Value) ->
     gen_tcp:send(Socket, Value).

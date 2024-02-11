@@ -42,24 +42,16 @@ destroy_room(Owner, RoomId) ->
             not_found        
     end.
 
-find_room_by_id(RoomId) ->
-    case ets:lookup(rooms, RoomId) of
-        [{RoomId, Room}] ->
-            {ok, Room};
-        [] ->
-            not_found
-    end.
-
 
 join_room(User, RoomId) ->
-    case dict:find(RoomId, get_rooms()) of
+    case find_room_by_id(RoomId) of
         {ok, Room} ->
             UpdatedRoom = room:join(User, Room),
-            dict:store(RoomId, UpdatedRoom, get_rooms()),
+            ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~s has joined room ~p~n", [User, Room]),
             ok;
-        error ->
-            {error, not_found}
+        not_found ->
+            not_found
     end.
 
 
@@ -71,5 +63,15 @@ print_rooms(Rooms) ->
 print_rooms([], Accumulated) ->
     lists:reverse(Accumulated);  % Reverse the accumulated list to maintain the correct order
 print_rooms([{Id, Room} | Rest], Accumulated) ->
-    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n~n", [Id, room:get_owner(Room)]),
+    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n~n Members: ~p~n~n", [Id, room:get_owner(Room), room:get_members(Room)]),
     print_rooms(Rest, [RoomInfo | Accumulated]).
+
+
+find_room_by_id(RoomId) ->
+    case ets:lookup(rooms, RoomId) of
+        [{RoomId, Room}] ->
+            {ok, Room};
+        [] ->
+            not_found
+    end.
+

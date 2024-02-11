@@ -1,5 +1,5 @@
 -module(room).
--export([new/1, get_id/1, get_owner/1, join/2]).
+-export([new/1, get_id/1, get_owner/1, get_members/1, join/2]).
 
 new(Owner) ->
     {room, erlang:unique_integer([positive, monotonic]), Owner, [Owner]}.
@@ -10,5 +10,14 @@ get_id({room, Id, _, _}) ->
 get_owner({room, _, Owner, _}) ->
     Owner.
 
+get_members({room, _, _, Members}) ->
+    Members.
+
 join(User, {room, Id, Owner, Members}) ->
-    {room, Id, Owner, [User | Members]}.
+    case lists:member(User, Members) of
+        true ->
+            {room, Id, Owner, Members};
+        false ->
+            % Add a user only if it's not already Member
+            {room, Id, Owner, [User | Members]}
+    end.
