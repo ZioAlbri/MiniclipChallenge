@@ -1,23 +1,29 @@
 -module(room_manager).
--export([new/0, create_room/1, join_room/2, get_rooms/0, init/0]).
+-export([init/0, create_room/1, join_room/2, get_rooms/0,  print_rooms/1]).
 
-new() ->
-    {room_manager, dict:new()}.
+init() ->
+    case ets:info(rooms) of
+        undefined ->  % Check if the table does not exist
+            ets:new(rooms, [named_table, set, public]);
+        _ ->
+            ok
+    end.
 
 create_room(Owner) ->
     Room = room:new(Owner),
     Id = room:get_id(Room),
-    UpdatedRooms = dict:store(Id, Room, get_rooms()),
+    io:format("Inserting room with Id ~p~n", [Id]),
+    ets:insert(rooms, {Id, Room}),
     io:format("User ~s has created room ~p~n", [Owner, Room]),
-    {ok, UpdatedRooms}.
+    ok.
 
 join_room(User, RoomId) ->
     case dict:find(RoomId, get_rooms()) of
         {ok, Room} ->
             UpdatedRoom = room:join(User, Room),
-            UpdatedRooms = dict:store(RoomId, UpdatedRoom, get_rooms()),
+            dict:store(RoomId, UpdatedRoom, get_rooms()),
             io:format("User ~s has joined room ~p~n", [User, Room]),
-            {ok, UpdatedRooms};
+            ok;
         error ->
             {error, not_found}
     end.
@@ -25,5 +31,9 @@ join_room(User, RoomId) ->
 get_rooms() ->
     ets:tab2list(rooms).
 
-init() ->
-    ets:new(rooms, [named_table, set, public]).
+print_rooms([]) ->
+    ok;  % base case, empty list
+print_rooms([{Id, _Room} | Rest]) ->
+    io:format("Room ID: ~p~n", [Id]),
+    io:format("Owner: ~p~n~n", [room:get_owner(_Room)]),
+    print_rooms(Rest).
