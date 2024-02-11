@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/1, destroy_room/2, join_room/2, leave_room/2, get_rooms/0]).
+-export([init/0, create_room/2, destroy_room/2, join_room/3, leave_room/3, get_rooms/0]).
 
 
 init() ->
@@ -11,8 +11,8 @@ init() ->
     end.
 
 
-create_room(Owner) ->
-    Room = room:new(Owner),
+create_room(Owner, Socket) ->
+    Room = room:new(Owner, Socket),
     Id = room:get_id(Room),
     io:format("Inserting room with Id ~p~n", [Id]),
     ets:insert(rooms, {Id, Room}),
@@ -43,10 +43,10 @@ destroy_room(Owner, RoomId) ->
     end.
 
 
-join_room(User, RoomId) ->
+join_room(User, Socket, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            UpdatedRoom = room:join(User, Room),
+            UpdatedRoom = room:join(User, Socket, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~s has joined room ~p~n", [User, Room]),
             ok;
@@ -55,10 +55,10 @@ join_room(User, RoomId) ->
     end.
 
 
-leave_room(User, RoomId) ->
+leave_room(User, Socket, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            UpdatedRoom = room:leave(User, Room),
+            UpdatedRoom = room:leave(User, Socket, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~s has left room ~p~n", [User, Room]),
             ok;

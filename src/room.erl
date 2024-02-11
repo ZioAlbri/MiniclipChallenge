@@ -1,27 +1,27 @@
 -module(room).
--export([new/1, get_id/1, get_owner/1, get_members/1, join/2, leave/2]).
+-export([new/2, get_id/1, get_owner/1, get_members/1, join/3, leave/3]).
 
-new(Owner) ->
-    {room, erlang:unique_integer([positive, monotonic]), Owner, [Owner]}.
+new(OwnerName, Socket) ->
+    {room, erlang:unique_integer([positive, monotonic]), {OwnerName, Socket}, [{OwnerName, Socket}]}.
 
 get_id({room, Id, _, _}) ->
     Id.
 
-get_owner({room, _, Owner, _}) ->
-    Owner.
+get_owner({room, _, {OwnerName, _}, _}) ->
+    OwnerName.
 
 get_members({room, _, _, Members}) ->
-    Members.
+    [UserName || {UserName, _} <- Members].
 
-join(User, {room, Id, Owner, Members}) ->
-    case lists:member(User, Members) of
+join(UserName, Socket, {room, Id, Owner, Members}) ->
+    case lists:member({UserName, Socket}, Members) of
         true ->
             {room, Id, Owner, Members};
         false ->
             % Add a user only if it's not already Member
-            {room, Id, Owner, [User | Members]}
+            {room, Id, Owner, [{UserName, Socket} | Members]}
     end.
 
-leave(User, {room, Id, Owner, Members}) ->
-    UpdatedMembers = lists:delete(User, Members),
+leave(UserName, Socket, {room, Id, Owner, Members}) ->
+    UpdatedMembers = lists:delete({UserName, Socket}, Members),
     {room, Id, Owner, UpdatedMembers}.

@@ -75,12 +75,14 @@ manage_command(Socket, Data, ClientName) ->
             manage_joinroom_command(Socket, ClientName);
         "q" -> 
             manage_leaveroom_command(Socket, ClientName);
+        "m" -> 
+            manage_sendmessage_command(Socket, ClientName);
         _ ->
             send_string(Socket, "Wrong command. Please try again.")
     end.
 
 manage_createroom_command(Socket, ClientName) ->
-    room_manager:create_room(ClientName),
+    room_manager:create_room(ClientName, Socket),
     send_string(Socket, "Room created.").
 
 manage_deleteroom_command(Socket, ClientName) ->
@@ -110,7 +112,7 @@ manage_joinroom_command(Socket, ClientName) ->
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        Result = room_manager:join_room(ClientName, RoomId),
+        Result = room_manager:join_room(ClientName, Socket, RoomId),
         case Result of
             ok ->
                 send_string(Socket, "Room joined. ");
@@ -127,7 +129,7 @@ manage_leaveroom_command(Socket, ClientName) ->
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        Result = room_manager:leave_room(ClientName, RoomId),
+        Result = room_manager:leave_room(ClientName, Socket, RoomId),
         case Result of
             ok ->
                 send_string(Socket, "Room left. ");
@@ -138,6 +140,10 @@ manage_leaveroom_command(Socket, ClientName) ->
         error:badarg ->
             send_string(Socket, "You have to insert an integer as room id. ")
     end.
+
+manage_sendmessage_command(Socket, ClientName) ->
+    ok.
+
 
 send_string(Socket, Value) ->
     gen_tcp:send(Socket, Value).
