@@ -14,7 +14,6 @@ init() ->
 create_room(Owner, Socket) ->
     Room = room:new(Owner, Socket),
     Id = room:get_id(Room),
-    io:format("Inserting room with Id ~p~n", [Id]),
     ets:insert(rooms, {Id, Room}),
     io:format("User ~s has created room ~p~n", [Owner, Room]),
     ok.
@@ -77,6 +76,7 @@ get_room_sockets(RoomId) ->
     end.
 
 
+
 get_rooms() ->
     print_rooms(ets:tab2list(rooms)).
 
@@ -85,7 +85,7 @@ print_rooms(Rooms) ->
 print_rooms([], Accumulated) ->
     lists:reverse(Accumulated);  % Reverse the accumulated list to maintain the correct order
 print_rooms([{Id, Room} | Rest], Accumulated) ->
-    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n~n Members: ~p~n~n", [Id, room:get_owner(Room), room:get_members(Room)]),
+    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n~n Members: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room)]),
     print_rooms(Rest, [RoomInfo | Accumulated]).
 
 

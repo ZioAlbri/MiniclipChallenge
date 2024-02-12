@@ -7,7 +7,7 @@
         l -> List all rooms;
         j -> Join an existing room;
         q -> Leave a joined room;
-        m -> Send message in a room;
+        m -> Send message in a room.
         ").
 
 start() ->
@@ -164,7 +164,8 @@ manage_sendmessage_command(Socket, ClientName) ->
     end.
 
 
-send_strings([], Message) ->
+
+send_strings([], _) ->
     ok;  % Base case: empty list
 send_strings([Socket | Rest], Message) ->
     send_string(Socket, Message),
