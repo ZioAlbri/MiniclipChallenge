@@ -7,12 +7,15 @@
         l -> List all rooms;
         j -> Join an existing room;
         q -> Leave a joined room;
-        m -> Send message in a room.
+        m -> Send message in a room;
+        p -> Send private message.
         ").
 
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(12345, [binary, {active, false}]),
     io:format("Server listening on port 12345... ~n~n"),
+    user_manager:init(),
+    io:format("Users manager initialized... ~n~n"),
     room_manager:init(),
     io:format("Rooms manager initialized... ~n~n"),
     accept_connections(ListenSocket).
@@ -29,6 +32,8 @@ handle_connection(Socket) ->
             %% Process the received client name
             ClientName = string:trim(binary_to_list(Data)),
             io:format("Connected: ~s~n", [ClientName]),
+            %% Store user info for private messages
+            user_manager:create_user(ClientName, Socket),
             %% Keep handling data from the connected client
             handle_data(Socket, ClientName);
         {error, Reason} ->
@@ -78,6 +83,8 @@ manage_command(Socket, Data, ClientName) ->
             manage_leaveroom_command(Socket, ClientName);
         "m" -> 
             manage_sendmessage_command(Socket, ClientName);
+        "p" -> 
+            manage_sendprivatemessage_command(Socket, ClientName);
         _ ->
             send_string(Socket, "Wrong command. Please try again.")
     end.
@@ -161,6 +168,27 @@ manage_sendmessage_command(Socket, ClientName) ->
     catch
         error:badarg ->
             send_string(Socket, "You have to insert an integer as room id. ")
+    end.
+
+manage_sendprivatemessage_command(Socket, ClientName) ->
+    send_string(Socket, "Type the id of the user: "),
+    {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
+    try
+        DestinationUserId = list_to_integer(string:trim(binary_to_list(DastinationUserIdData))),
+        DestinationUser = user_manager:find_user_by_id(DestinationUserId),
+        case DestinationUser of
+            {ok, User} ->
+                send_string(Socket, "Type the message you want to send: "),
+                {ok, MessageData} = gen_tcp:recv(Socket, 0),
+                Message = ClientName ++ " says (private message): " ++ binary_to_list(MessageData), % 
+                send_string(user:get_socket(User), Message),
+                send_string(Socket, "Message sent. ");
+            not_found ->
+                send_string(Socket, "Can't find the user. Try with another name. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as user id. ")
     end.
 
 
