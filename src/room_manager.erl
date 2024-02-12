@@ -85,8 +85,14 @@ print_rooms(Rooms) ->
 print_rooms([], Accumulated) ->
     lists:reverse(Accumulated);  % Reverse the accumulated list to maintain the correct order
 print_rooms([{Id, Room} | Rest], Accumulated) ->
-    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n Members: ~p~n Private: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room), room:get_accessibility(Room)]),
-    print_rooms(Rest, [RoomInfo | Accumulated]).
+    IsPrivate = room:get_accessibility(Room),
+    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~nMembers: ~p~nPrivate: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room), IsPrivate]),
+    case IsPrivate of
+        true ->
+                print_rooms(Rest, [Accumulated]);
+        false ->
+                print_rooms(Rest, [RoomInfo | Accumulated])
+    end.
 
 
 find_room_by_id(RoomId) ->
