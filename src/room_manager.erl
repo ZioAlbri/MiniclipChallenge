@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, get_room_sockets/1, get_rooms/0]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, get_rooms/0]).
 
 
 init() ->
@@ -59,6 +59,25 @@ leave_room(User, RoomId) ->
             ets:insert(rooms, {RoomId, UpdatedRoom}),
             io:format("User ~p has left room ~p~n", [User, Room]),
             ok;
+        not_found ->
+            not_found
+    end.
+
+
+invite_user(Owner, User, RoomId) ->
+    case find_room_by_id(RoomId) of
+        {ok, Room} ->
+            RoomOwner = room:get_owner(Room),
+            if
+                RoomOwner == Owner ->
+                    room:invite(User, Room), 
+                    io:format("User ~p has been invited to room ~p~n", [User, Room]),
+                    ok;
+                true ->
+                    % Do nothing or perform a different action for non-matching owner
+                    io:format("Owner ~p does not match expected owner ~p. No action performed.~n", [Owner, RoomOwner]),
+                    non_matching
+            end;
         not_found ->
             not_found
     end.

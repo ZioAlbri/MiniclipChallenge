@@ -8,7 +8,8 @@
         j -> Join an existing room;
         q -> Leave a joined room;
         m -> Send message in a room;
-        p -> Send private message.
+        p -> Send private message;
+        i -> Invite user to a room you own.
         ").
 
 start() ->
@@ -85,6 +86,8 @@ manage_command(Data, User) ->
             manage_sendmessage_command(User);
         "p" -> 
             manage_sendprivatemessage_command(User);
+        "i" -> 
+            manage_inviteuser_command(User);
         _ ->
             send_string(user:get_socket(User), "Wrong command. Please try again.")
     end. 
@@ -203,12 +206,44 @@ manage_sendprivatemessage_command(User) ->
                 send_string(user:get_socket(DestinationUser), Message),
                 send_string(Socket, "Message sent. ");
             not_found ->
-                send_string(Socket, "Can't find the user. Try with another name. ")
+                send_string(Socket, "Can't find the user. Try with another id. ")
         end
     catch
         error:badarg ->
             send_string(Socket, "You have to insert an integer as user id. ")
     end.
+
+
+manage_inviteuser_command(User) ->
+    Socket = user:get_socket(User),
+    send_string(Socket, "Type the id of the room: "),
+    {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
+    send_string(Socket, "Type the id of the user: "),
+    {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
+        DestinationUserId = list_to_integer(string:trim(binary_to_list(DastinationUserIdData))),
+        DestinationUserResult = user_manager:find_user_by_id(DestinationUserId),
+        case DestinationUserResult of
+            {ok, DestinationUser} ->
+                Result = room_manager:invite_user(User, DestinationUser, RoomId),
+                case Result of
+                    ok ->
+                        send_string(Socket, "Invite sent. "),
+                        send_string(user:get_socket(DestinationUser), "You've been invited to join room " ++ RoomId);
+                    non_matching ->
+                        send_string(Socket, "You can't invite users to rooms you don't own! ");
+                    not_found ->
+                        send_string(Socket, "Can't find the room. Try with another id. ")
+                end;
+            not_found ->
+                send_string(Socket, "Can't find the user. Try with another id. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as room id and user id. ")
+    end.
+
 
 
 
