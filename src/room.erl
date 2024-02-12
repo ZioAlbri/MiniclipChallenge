@@ -1,33 +1,60 @@
 -module(room).
--export([new/3, get_id/1, get_owner/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/3, leave/3]).
+-export([new/3, get_id/1, get_owner/1, get_owner_name/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/3, invite/3, leave/3]).
+
+-record(room, {
+    id,
+    owner,
+    members,
+    is_private,
+    invited
+}).
 
 new(OwnerName, Socket, IsPrivate) ->
-    {room, erlang:unique_integer([positive, monotonic]), {OwnerName, Socket}, [{OwnerName, Socket}], IsPrivate}.
+    #room{
+        id = erlang:unique_integer([positive, monotonic]),
+        owner = {OwnerName, Socket},
+        members = [{OwnerName, Socket}],
+        is_private = IsPrivate,
+        invited = [{OwnerName, Socket}]
+    }.
 
-get_id({room, Id, _, _, _}) ->
-    Id.
+get_id(Room) ->
+    Room#room.id.
 
-get_owner({room, _, {OwnerName, _}, _, _}) ->
+get_owner(Room) ->
+    Room#room.owner.
+
+get_owner_name(Room) ->
+    {OwnerName, _Socket} = Room#room.owner,
     OwnerName.
 
-get_members_names({room, _, _, Members, _}) ->
-    [UserName || {UserName, _} <- Members].
+get_members_names(Room) ->
+    [UserName || {UserName, _} <- Room#room.members].
 
-get_members_sockets({room, _, _, Members, _}) ->
-    [Socket || {_, Socket} <- Members].
+get_members_sockets(Room) ->
+    [Socket || {_, Socket} <- Room#room.members].
 
-get_accessibility({room, _, _, _, IsPrivate}) ->
-    IsPrivate.
+get_accessibility(Room) ->
+    Room#room.is_private.
 
-join(UserName, Socket, {room, Id, Owner, Members, IsPrivate}) ->
-    case lists:member({UserName, Socket}, Members) of
+join(UserName, Socket, Room) ->
+    UpdatedMembers = case lists:member({UserName, Socket}, Room#room.members) of
         true ->
-            {room, Id, Owner, Members, IsPrivate};
+            Room#room.members;
         false ->
-            % Add a user only if it's not already Member
-            {room, Id, Owner, [{UserName, Socket} | Members], IsPrivate}
-    end.
+            [{UserName, Socket} | Room#room.members]
+    end,
+    Room#room{members = UpdatedMembers}.
 
-leave(UserName, Socket, {room, Id, Owner, Members, IsPrivate}) ->
-    UpdatedMembers = lists:delete({UserName, Socket}, Members),
-    {room, Id, Owner, UpdatedMembers, IsPrivate}.
+leave(UserName, Socket, Room) ->
+    UpdatedMembers = lists:delete({UserName, Socket}, Room#room.members),
+    Room#room{members = UpdatedMembers}.
+
+invite(UserName, Socket, Room) ->
+    UpdatedInvited = case lists:member({UserName, Socket}, Room#room.invited) of
+        true ->
+            Room#room.invited;
+        false ->
+            [{UserName, Socket} | Room#room.invited]
+    end,
+    Room#room{invited = UpdatedInvited}.

@@ -23,7 +23,7 @@ destroy_room(Owner, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
             io:format("Found room: ~p~n", [Room]),
-            RoomOwner = room:get_owner(Room),
+            RoomOwner = room:get_owner_name(Room),
             Result = if
                 RoomOwner == Owner ->
                     io:format("Destroying room with Id ~p~n", [RoomId]),

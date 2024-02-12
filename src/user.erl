@@ -1,14 +1,16 @@
 -module(user).
 -export([new/2, get_id/1, get_name/1, get_socket/1]).
 
+-record(user, {id, name, socket}).
+
 new(Name, Socket) ->
-    {user, erlang:unique_integer([positive, monotonic]), {Name, Socket}}.
+    #user{id = erlang:unique_integer([positive, monotonic]), name = Name, socket = Socket}.
 
-get_id({user, Id, {_, _}}) ->
-    Id.
+get_id(User) ->
+    User#user.id.
 
-get_name({user, _, {Name, _}}) ->
-    Name.
+get_name(User) ->
+    User#user.name.
 
-get_socket({user, _, {_, Socket}}) ->
-    Socket.
+get_socket(User) ->
+    User#user.socket.
