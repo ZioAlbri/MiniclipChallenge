@@ -90,8 +90,21 @@ manage_command(Socket, Data, ClientName) ->
     end.
 
 manage_createroom_command(Socket, ClientName) ->
-    room_manager:create_room(ClientName, Socket, false),
-    send_string(Socket, "Room created.").
+    send_string(Socket, "Type the type of room you want to create (0 = public, 1 = private, <default> = public): "),
+    {ok, RoomTypeData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomType = list_to_integer(string:trim(binary_to_list(RoomTypeData))),
+        case RoomType of
+            1 ->
+                room_manager:create_room(ClientName, Socket, true);
+            _ ->
+                room_manager:create_room(ClientName, Socket, false)
+        end,       
+        send_string(Socket, "Room created. ")
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer (0 = public, 1 = private) as room type. ")
+    end.
 
 manage_deleteroom_command(Socket, ClientName) ->
     send_string(Socket, "Type the id of the room you want to destroy: "),
