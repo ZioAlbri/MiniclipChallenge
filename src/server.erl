@@ -87,7 +87,7 @@ manage_command(Socket, Data, ClientName) ->
             manage_sendprivatemessage_command(Socket, ClientName);
         _ ->
             send_string(Socket, "Wrong command. Please try again.")
-    end.
+    end. 
 
 manage_createroom_command(Socket, ClientName) ->
     send_string(Socket, "Type the type of room you want to create (0 = public, 1 = private, <default> = public): "),
