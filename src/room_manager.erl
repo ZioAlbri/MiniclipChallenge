@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/3, leave_room/3, get_room_sockets/1, get_rooms/0]).
+-export([init/0, create_room/3, destroy_room/2, join_room/3, leave_room/3, get_room_sockets/1, get_rooms/0]).
 
 
 init() ->
@@ -11,8 +11,8 @@ init() ->
     end.
 
 
-create_room(Owner, Socket) ->
-    Room = room:new(Owner, Socket),
+create_room(Owner, Socket, IsPrivate) ->
+    Room = room:new(Owner, Socket, IsPrivate),
     Id = room:get_id(Room),
     ets:insert(rooms, {Id, Room}),
     io:format("User ~s has created room ~p~n", [Owner, Room]),
@@ -85,7 +85,7 @@ print_rooms(Rooms) ->
 print_rooms([], Accumulated) ->
     lists:reverse(Accumulated);  % Reverse the accumulated list to maintain the correct order
 print_rooms([{Id, Room} | Rest], Accumulated) ->
-    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n~n Members: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room)]),
+    RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~n Members: ~p~n Private: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room), room:get_accessibility(Room)]),
     print_rooms(Rest, [RoomInfo | Accumulated]).
 
 

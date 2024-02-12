@@ -90,7 +90,7 @@ manage_command(Socket, Data, ClientName) ->
     end.
 
 manage_createroom_command(Socket, ClientName) ->
-    room_manager:create_room(ClientName, Socket),
+    room_manager:create_room(ClientName, Socket, false),
     send_string(Socket, "Room created.").
 
 manage_deleteroom_command(Socket, ClientName) ->
