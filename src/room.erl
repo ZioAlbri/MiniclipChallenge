@@ -1,5 +1,5 @@
 -module(room).
--export([new/3, get_id/1, get_owner/1, get_owner_name/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/3, invite/3, leave/3]).
+-export([new/2, get_id/1, get_owner/1, get_owner_name/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/2, leave/2, invite/2]).
 
 -record(room, {
     id,
@@ -9,13 +9,13 @@
     invited
 }).
 
-new(OwnerName, Socket, IsPrivate) ->
+new(Owner, IsPrivate) ->
     #room{
         id = erlang:unique_integer([positive, monotonic]),
-        owner = {OwnerName, Socket},
-        members = [{OwnerName, Socket}],
+        owner = Owner,
+        members = [Owner],
         is_private = IsPrivate,
-        invited = [{OwnerName, Socket}]
+        invited = [Owner]
     }.
 
 get_id(Room) ->
@@ -29,32 +29,32 @@ get_owner_name(Room) ->
     OwnerName.
 
 get_members_names(Room) ->
-    [UserName || {UserName, _} <- Room#room.members].
+    [user:get_name(User) || User <- Room#room.members].
 
 get_members_sockets(Room) ->
-    [Socket || {_, Socket} <- Room#room.members].
+    [user:get_socket(User) || User <- Room#room.members].
 
 get_accessibility(Room) ->
     Room#room.is_private.
 
-join(UserName, Socket, Room) ->
-    UpdatedMembers = case lists:member({UserName, Socket}, Room#room.members) of
+join(User, Room) ->
+    UpdatedMembers = case lists:member(User, Room#room.members) of
         true ->
             Room#room.members;
         false ->
-            [{UserName, Socket} | Room#room.members]
+            [User | Room#room.members]
     end,
     Room#room{members = UpdatedMembers}.
 
-leave(UserName, Socket, Room) ->
-    UpdatedMembers = lists:delete({UserName, Socket}, Room#room.members),
+leave(User, Room) ->
+    UpdatedMembers = lists:delete(User, Room#room.members),
     Room#room{members = UpdatedMembers}.
 
-invite(UserName, Socket, Room) ->
-    UpdatedInvited = case lists:member({UserName, Socket}, Room#room.invited) of
+invite(User, Room) ->
+    UpdatedInvited = case lists:member(User, Room#room.invited) of
         true ->
             Room#room.invited;
         false ->
-            [{UserName, Socket} | Room#room.invited]
+            [User | Room#room.invited]
     end,
     Room#room{invited = UpdatedInvited}.

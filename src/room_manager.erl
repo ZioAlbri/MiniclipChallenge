@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/3, destroy_room/2, join_room/3, leave_room/3, get_room_sockets/1, get_rooms/0]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, get_room_sockets/1, get_rooms/0]).
 
 
 init() ->
@@ -11,24 +11,22 @@ init() ->
     end.
 
 
-create_room(Owner, Socket, IsPrivate) ->
-    Room = room:new(Owner, Socket, IsPrivate),
+create_room(Owner, IsPrivate) ->
+    Room = room:new(Owner, IsPrivate),
     Id = room:get_id(Room),
     ets:insert(rooms, {Id, Room}),
-    io:format("User ~s has created room ~p~n", [Owner, Room]),
+    io:format("User ~p has created room ~p~n", [Owner, Room]),
     ok.
 
 
 destroy_room(Owner, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            io:format("Found room: ~p~n", [Room]),
-            RoomOwner = room:get_owner_name(Room),
+            RoomOwner = room:get_owner(Room),
             Result = if
                 RoomOwner == Owner ->
-                    io:format("Destroying room with Id ~p~n", [RoomId]),
                     ets:delete(rooms, RoomId), 
-                    io:format("User ~s has destroyed room ~p~n", [Owner, Room]),
+                    io:format("User ~p has destroyed room ~p~n", [Owner, Room]),
                     ok;
                 true ->
                     % Do nothing or perform a different action for non-matching owner
@@ -42,24 +40,24 @@ destroy_room(Owner, RoomId) ->
     end.
 
 
-join_room(User, Socket, RoomId) ->
+join_room(User, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            UpdatedRoom = room:join(User, Socket, Room),
+            UpdatedRoom = room:join(User, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
-            io:format("User ~s has joined room ~p~n", [User, Room]),
+            io:format("User ~p has joined room ~p~n", [User, Room]),
             ok;
         not_found ->
             not_found
     end.
 
 
-leave_room(User, Socket, RoomId) ->
+leave_room(User, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            UpdatedRoom = room:leave(User, Socket, Room),
+            UpdatedRoom = room:leave(User, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
-            io:format("User ~s has left room ~p~n", [User, Room]),
+            io:format("User ~p has left room ~p~n", [User, Room]),
             ok;
         not_found ->
             not_found

@@ -16,7 +16,7 @@ create_user(Name, Socket) ->
     Id = user:get_id(User),
     ets:insert(users, {Id, User}),
     io:format("User ~s has been created with id ~p~n", [Name, Id]),
-    ok.
+    User.
 
 
 get_users_sockets() ->

@@ -33,9 +33,9 @@ handle_connection(Socket) ->
             ClientName = string:trim(binary_to_list(Data)),
             io:format("Connected: ~s~n", [ClientName]),
             %% Store user info for private messages
-            user_manager:create_user(ClientName, Socket),
+            User = user_manager:create_user(ClientName, Socket),
             %% Keep handling data from the connected client
-            handle_data(Socket, ClientName);
+            handle_data(User);
         {error, Reason} ->
             %% Handle errors
             io:format("Connection error: ~p~n", [Reason]),
@@ -48,57 +48,58 @@ get_client_name(Socket) ->
     %% Receive the client's name
     gen_tcp:recv(Socket, 0).
 
-handle_data(Socket, ClientName) ->
-    send_string(Socket, ?COMMANDS),
-    case gen_tcp:recv(Socket, 0) of
+handle_data(User) ->
+    send_string(user:get_socket(User), ?COMMANDS),
+    case gen_tcp:recv(user:get_socket(User), 0) of
         {ok, Data} ->
-            manage_command(Socket, Data, ClientName),
+            manage_command(Data, User),
             %% Keep handling data from the connected client
-            handle_data(Socket, ClientName);
+            handle_data(User);
         {error, closed} ->
             %% Connection closed by the client
-            io:format("Connection closed by ~s~n", [ClientName]),
+            io:format("Connection closed by ~s~n", [user:get_name(User)]),
             ok; %% Terminate the handling process
         {error, Reason} ->
             %% Handle errors
-            io:format("Error for ~s: ~p~n", [ClientName, Reason]),
+            io:format("Error for ~s: ~p~n", [user:get_name(User), Reason]),
             ok %% Terminate the handling process
     end.
 
 
 
-manage_command(Socket, Data, ClientName) ->
+manage_command(Data, User) ->
     Command = string:trim(binary_to_list(Data)),
-    io:format("Received command ~s from ~p~n", [Command, ClientName]),
+    io:format("Received command ~s from ~p~n", [Command, user:get_name(User)]),
     case Command of
         "c" -> 
-            manage_createroom_command(Socket, ClientName);
+            manage_createroom_command(User);
         "d" -> 
-            manage_deleteroom_command(Socket, ClientName);
+            manage_deleteroom_command(User);
         "l" -> 
-            manage_listrooms_command(Socket);
+            manage_listrooms_command(User);
         "j" -> 
-            manage_joinroom_command(Socket, ClientName);
+            manage_joinroom_command(User);
         "q" -> 
-            manage_leaveroom_command(Socket, ClientName);
+            manage_leaveroom_command(User);
         "m" -> 
-            manage_sendmessage_command(Socket, ClientName);
+            manage_sendmessage_command(User);
         "p" -> 
-            manage_sendprivatemessage_command(Socket, ClientName);
+            manage_sendprivatemessage_command(User);
         _ ->
-            send_string(Socket, "Wrong command. Please try again.")
+            send_string(user:get_socket(User), "Wrong command. Please try again.")
     end. 
 
-manage_createroom_command(Socket, ClientName) ->
+manage_createroom_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the type of room you want to create (0 = public, 1 = private, <default> = public): "),
     {ok, RoomTypeData} = gen_tcp:recv(Socket, 0),
     try
         RoomType = list_to_integer(string:trim(binary_to_list(RoomTypeData))),
         case RoomType of
             1 ->
-                room_manager:create_room(ClientName, Socket, true);
+                room_manager:create_room(User, true);
             _ ->
-                room_manager:create_room(ClientName, Socket, false)
+                room_manager:create_room(User, false)
         end,       
         send_string(Socket, "Room created. ")
     catch
@@ -106,12 +107,13 @@ manage_createroom_command(Socket, ClientName) ->
             send_string(Socket, "You have to insert an integer (0 = public, 1 = private) as room type. ")
     end.
 
-manage_deleteroom_command(Socket, ClientName) ->
+manage_deleteroom_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the id of the room you want to destroy: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        Result = room_manager:destroy_room(ClientName, RoomId),
+        Result = room_manager:destroy_room(User, RoomId),
         case Result of
             ok ->
                 send_string(Socket, "Room destroyed. ");
@@ -125,15 +127,16 @@ manage_deleteroom_command(Socket, ClientName) ->
             send_string(Socket, "You have to insert an integer as room id. ")
     end.
 
-manage_listrooms_command(Socket) ->
-    send_string(Socket, room_manager:get_rooms()).
+manage_listrooms_command(User) ->
+    send_string(user:get_socket(User), room_manager:get_rooms()).
 
-manage_joinroom_command(Socket, ClientName) ->
+manage_joinroom_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the id of the room you want to join: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        Result = room_manager:join_room(ClientName, Socket, RoomId),
+        Result = room_manager:join_room(User, RoomId),
         case Result of
             ok ->
                 send_string(Socket, "Room joined. ");
@@ -145,12 +148,13 @@ manage_joinroom_command(Socket, ClientName) ->
             send_string(Socket, "You have to insert an integer as room id. ")
     end.
 
-manage_leaveroom_command(Socket, ClientName) ->
+manage_leaveroom_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the id of the room you want to leave: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        Result = room_manager:leave_room(ClientName, Socket, RoomId),
+        Result = room_manager:leave_room(User, RoomId),
         case Result of
             ok ->
                 send_string(Socket, "Room left. ");
@@ -162,7 +166,8 @@ manage_leaveroom_command(Socket, ClientName) ->
             send_string(Socket, "You have to insert an integer as room id. ")
     end.
 
-manage_sendmessage_command(Socket, ClientName) ->
+manage_sendmessage_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the id of the room: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
@@ -172,7 +177,7 @@ manage_sendmessage_command(Socket, ClientName) ->
             {ok, Sockets} ->
                 send_string(Socket, "Type the message you want to send: "),
                 {ok, MessageData} = gen_tcp:recv(Socket, 0),
-                Message = ClientName ++ " from room " ++ integer_to_list(RoomId) ++ " says: " ++binary_to_list(MessageData), % 
+                Message = user:get_name(User) ++ " from room " ++ integer_to_list(RoomId) ++ " says: " ++binary_to_list(MessageData), % 
                 send_strings(Sockets, Message),
                 send_string(Socket, "Message sent. ");
             not_found ->
@@ -183,18 +188,19 @@ manage_sendmessage_command(Socket, ClientName) ->
             send_string(Socket, "You have to insert an integer as room id. ")
     end.
 
-manage_sendprivatemessage_command(Socket, ClientName) ->
+manage_sendprivatemessage_command(User) ->
+    Socket = user:get_socket(User),
     send_string(Socket, "Type the id of the user: "),
     {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
     try
         DestinationUserId = list_to_integer(string:trim(binary_to_list(DastinationUserIdData))),
-        DestinationUser = user_manager:find_user_by_id(DestinationUserId),
-        case DestinationUser of
-            {ok, User} ->
+        DestinationUserResult = user_manager:find_user_by_id(DestinationUserId),
+        case DestinationUserResult of
+            {ok, DestinationUser} ->
                 send_string(Socket, "Type the message you want to send: "),
                 {ok, MessageData} = gen_tcp:recv(Socket, 0),
-                Message = ClientName ++ " says (private message): " ++ binary_to_list(MessageData), % 
-                send_string(user:get_socket(User), Message),
+                Message = user:get_name(User) ++ " says (private message): " ++ binary_to_list(MessageData), % 
+                send_string(user:get_socket(DestinationUser), Message),
                 send_string(Socket, "Message sent. ");
             not_found ->
                 send_string(Socket, "Can't find the user. Try with another name. ")
