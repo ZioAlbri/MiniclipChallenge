@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, get_rooms/0]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, get_rooms/1]).
 
 
 init() ->
@@ -43,10 +43,26 @@ destroy_room(Owner, RoomId) ->
 join_room(User, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            UpdatedRoom = room:join(User, Room),
-            ets:insert(rooms, {RoomId, UpdatedRoom}),
-            io:format("User ~p has joined room ~p~n", [User, Room]),
-            ok;
+            IsPrivate = room:get_accessibility(Room),
+            case IsPrivate of
+                true ->
+                    case room:is_invited(Room, User) of
+                        true ->
+                            UpdatedRoom = room:join(User, Room);
+                        false ->
+                            UpdatedRoom = Room
+                    end;
+                false ->
+                    UpdatedRoom = room:join(User, Room)
+            end,
+            case UpdatedRoom == Room of
+                true ->
+                    not_found;
+                false ->
+                    ets:insert(rooms, {RoomId, UpdatedRoom}),
+                    io:format("User ~p has joined room ~p~n", [User, UpdatedRoom]),
+                    ok
+            end;
         not_found ->
             not_found
     end.
@@ -57,7 +73,7 @@ leave_room(User, RoomId) ->
         {ok, Room} ->
             UpdatedRoom = room:leave(User, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
-            io:format("User ~p has left room ~p~n", [User, Room]),
+            io:format("User ~p has left room ~p~n", [User, UpdatedRoom]),
             ok;
         not_found ->
             not_found
@@ -70,8 +86,9 @@ invite_user(Owner, User, RoomId) ->
             RoomOwner = room:get_owner(Room),
             if
                 RoomOwner == Owner ->
-                    room:invite(User, Room), 
-                    io:format("User ~p has been invited to room ~p~n", [User, Room]),
+                    UpdatedRoom = room:invite(User, Room), 
+                    ets:insert(rooms, {RoomId, UpdatedRoom}),
+                    io:format("User ~p has been invited to room ~p~n", [User, UpdatedRoom]),
                     ok;
                 true ->
                     % Do nothing or perform a different action for non-matching owner
@@ -94,21 +111,26 @@ get_room_sockets(RoomId) ->
 
 
 
-get_rooms() ->
-    print_rooms(ets:tab2list(rooms)).
+get_rooms(User) ->
+    print_rooms(ets:tab2list(rooms), User).
 
-print_rooms(Rooms) ->
-    print_rooms(Rooms, []).
-print_rooms([], Accumulated) ->
+print_rooms(Rooms, User) ->
+    print_rooms(Rooms, [], User).
+print_rooms([], Accumulated, _) ->
     lists:reverse(Accumulated);  % Reverse the accumulated list to maintain the correct order
-print_rooms([{Id, Room} | Rest], Accumulated) ->
+print_rooms([{Id, Room} | Rest], Accumulated, User) ->
     IsPrivate = room:get_accessibility(Room),
     RoomInfo = io_lib:format("Room ID: ~p~nOwner: ~p~nMembers: ~p~nPrivate: ~p~n~n", [Id, room:get_owner(Room), room:get_members_names(Room), IsPrivate]),
     case IsPrivate of
         true ->
-                print_rooms(Rest, [Accumulated]);
+            case room:is_invited(Room, User) of
+                true ->
+                    print_rooms(Rest, [RoomInfo | Accumulated], User);
+                false ->
+                    print_rooms(Rest, [Accumulated], User)
+            end;
         false ->
-                print_rooms(Rest, [RoomInfo | Accumulated])
+                print_rooms(Rest, [RoomInfo | Accumulated], User)
     end.
 
 

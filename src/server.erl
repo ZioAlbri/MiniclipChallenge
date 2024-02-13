@@ -131,7 +131,7 @@ manage_deleteroom_command(User) ->
     end.
 
 manage_listrooms_command(User) ->
-    send_string(user:get_socket(User), room_manager:get_rooms()).
+    send_string(user:get_socket(User), room_manager:get_rooms(User)).
 
 manage_joinroom_command(User) ->
     Socket = user:get_socket(User),
@@ -216,9 +216,9 @@ manage_sendprivatemessage_command(User) ->
 
 manage_inviteuser_command(User) ->
     Socket = user:get_socket(User),
-    send_string(Socket, "Type the id of the room: "),
+    send_string(Socket, "Type the room id: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
-    send_string(Socket, "Type the id of the user: "),
+    send_string(Socket, "Type the user id: "),
     {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
@@ -230,7 +230,7 @@ manage_inviteuser_command(User) ->
                 case Result of
                     ok ->
                         send_string(Socket, "Invite sent. "),
-                        send_string(user:get_socket(DestinationUser), "You've been invited to join room " ++ RoomId);
+                        send_string(user:get_socket(DestinationUser), "You've been invited to join room " ++ integer_to_list(RoomId));
                     non_matching ->
                         send_string(Socket, "You can't invite users to rooms you don't own! ");
                     not_found ->

@@ -1,5 +1,5 @@
 -module(room).
--export([new/2, get_id/1, get_owner/1, get_owner_name/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/2, leave/2, invite/2]).
+-export([new/2, get_id/1, get_owner/1, get_owner_name/1, get_members_names/1, get_members_sockets/1, get_accessibility/1, join/2, leave/2, invite/2, is_invited/2]).
 
 -record(room, {
     id,
@@ -51,10 +51,13 @@ leave(User, Room) ->
     Room#room{members = UpdatedMembers}.
 
 invite(User, Room) ->
-    UpdatedInvited = case lists:member(User, Room#room.invited) of
+    UpdatedInvited = case is_invited(Room, User) of
         true ->
             Room#room.invited;
         false ->
             [User | Room#room.invited]
     end,
     Room#room{invited = UpdatedInvited}.
+
+is_invited(Room, User) ->
+    lists:member(User, Room#room.invited).
