@@ -8,7 +8,8 @@ init() ->
             ets:new(rooms, [named_table, set, public]);
         _ ->
             ok
-    end.
+    end,
+    room_db:init().
 
 
 create_room(Owner, IsPrivate) ->
@@ -16,6 +17,7 @@ create_room(Owner, IsPrivate) ->
     Id = room:get_id(Room),
     ets:insert(rooms, {Id, Room}),
     io:format("User ~p has created room ~p~n", [Owner, Room]),
+    io:format("DBResult: ~p ~n", [room_db:put_room(Room)]),
     ok.
 
 
