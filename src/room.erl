@@ -11,7 +11,8 @@
     leave/2, 
     get_invited/1, 
     invite/2, 
-    is_invited/2]).
+    is_invited/2,
+    transform_jsonitem_to_room/1]).
 
 -record(room, {
     id,
@@ -78,3 +79,26 @@ invite(User, Room) ->
 
 is_invited(Room, User) ->
     lists:member(User, Room#room.invited).
+
+transform_jsonitem_to_room(Item) ->
+    Id = list_to_integer(string:trim(binary_to_list(maps:get(<<"N">>, maps:get(<<"id">>, Item))))),
+    Owner = user:transform_jsonitem_to_user(maps:get(<<"owner">>, Item)),
+    Members = maps:get(<<"L">>, maps:get(<<"members">>, Item)),
+    IsPrivate = maps:get(<<"BOOL">>, maps:get(<<"is_private">>, Item)),
+    Invited = maps:get(<<"L">>, maps:get(<<"invited">>, Item)),
+
+    io:format("Id: ~p~n", [Id]),
+    io:format("Owner: ~p~n", [Owner]),
+    TransformedMembers = [user:transform_jsonitem_to_user(Member) || Member <- Members],
+    io:format("Members: ~p~n", [TransformedMembers]),
+    io:format("Is Private: ~p~n", [IsPrivate]),
+    TransformedInvited = [user:transform_jsonitem_to_user(InvitedUser) || InvitedUser <- Invited],
+    io:format("Invited: ~p~n", [TransformedInvited]),
+
+    #room{
+        id = Id,
+        owner = Owner,
+        members = TransformedMembers,
+        is_private = IsPrivate,
+        invited = TransformedInvited
+    }.

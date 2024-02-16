@@ -9,7 +9,13 @@ init() ->
         _ ->
             ok
     end,
-    room_db:init().
+    StoredRooms = room_db:init(),
+    lists:foreach(
+        fun(StoredRoom) ->
+            ets:insert(rooms, StoredRoom)
+        end,
+        StoredRooms
+    ).
 
 
 create_room(Owner, IsPrivate) ->
@@ -17,7 +23,7 @@ create_room(Owner, IsPrivate) ->
     Id = room:get_id(Room),
     ets:insert(rooms, {Id, Room}),
     io:format("User ~p has created room ~p~n", [Owner, Room]),
-    io:format("DBResult: ~p ~n", [room_db:put_room(Room)]),
+    room_db:create_room(Room),
     ok.
 
 
@@ -27,7 +33,8 @@ destroy_room(Owner, RoomId) ->
             RoomOwner = room:get_owner(Room),
             Result = if
                 RoomOwner == Owner ->
-                    ets:delete(rooms, RoomId), 
+                    ets:delete(rooms, RoomId),
+                    room_db:delete_room(Room), 
                     io:format("User ~p has destroyed room ~p~n", [Owner, Room]),
                     ok;
                 true ->
@@ -62,6 +69,7 @@ join_room(User, RoomId) ->
                     not_found;
                 false ->
                     ets:insert(rooms, {RoomId, UpdatedRoom}),
+                    room_db:update_room(UpdatedRoom),
                     io:format("User ~p has joined room ~p~n", [User, UpdatedRoom]),
                     ok
             end;
@@ -75,6 +83,7 @@ leave_room(User, RoomId) ->
         {ok, Room} ->
             UpdatedRoom = room:leave(User, Room),
             ets:insert(rooms, {RoomId, UpdatedRoom}),
+            room_db:update_room(UpdatedRoom),
             io:format("User ~p has left room ~p~n", [User, UpdatedRoom]),
             ok;
         not_found ->
@@ -90,6 +99,7 @@ invite_user(Owner, User, RoomId) ->
                 RoomOwner == Owner ->
                     UpdatedRoom = room:invite(User, Room), 
                     ets:insert(rooms, {RoomId, UpdatedRoom}),
+                    room_db:update_room(UpdatedRoom),
                     io:format("User ~p has been invited to room ~p~n", [User, UpdatedRoom]),
                     ok;
                 true ->

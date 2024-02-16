@@ -5,6 +5,7 @@ execute_command(Command) ->
     Result = remove_newlines(Command),
     case os:cmd(Result) of
         Output ->
+            io:format("~nCommand response: ~n~p~n~n", [Output]),
             string:tokens(Output, "\n")
     end.
 
