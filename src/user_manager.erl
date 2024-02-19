@@ -21,8 +21,8 @@ init() ->
 
 
 create_user(Name, Socket) ->
-    User = user:new(Name, Socket),
-    Id = user:get_id(User),
+    Id = collection_utils:get_highest_id(users) + 1,
+    User = user:new(Id, Name, Socket),
     ets:insert(users, {Id, User}),
     io:format("User ~s has been created with id ~p~n", [Name, Id]),
     user_db:create_user(User),

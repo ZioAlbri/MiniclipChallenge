@@ -1,5 +1,5 @@
 -module(room).
--export([new/2, 
+-export([new/3, 
     get_id/1, 
     get_owner/1, 
     get_owner_name/1, 
@@ -24,9 +24,9 @@
     invited
 }).
 
-new(Owner, IsPrivate) ->
+new(Id, Owner, IsPrivate) ->
     #room{
-        id = erlang:unique_integer([positive, monotonic]),
+        id = Id,
         owner = Owner,
         members = [Owner],
         is_private = IsPrivate,
@@ -83,7 +83,7 @@ invite(User, Room) ->
     Room#room{invited = UpdatedInvited}.
 
 is_invited(Room, User) ->
-    lists:member(User, Room#room.invited).
+    lists:any(fun(U) -> user:check_id(U, user:get_id(User)) end, Room#room.invited).
 
 update_invited(Room, UpdatedInvited) ->
     Room#room{invited = UpdatedInvited}.

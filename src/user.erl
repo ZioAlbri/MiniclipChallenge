@@ -1,13 +1,16 @@
 -module(user).
--export([new/2, get_id/1, get_name/1, check_name/2, find_by_name/2, get_socket/1, set_socket/2, transform_jsonitem_to_user/1]).
+-export([new/3, get_id/1, check_id/2, get_name/1, check_name/2, find_by_name/2, get_socket/1, set_socket/2, transform_jsonitem_to_user/1]).
 
 -record(user, {id, name, socket = undefined}).
 
-new(Name, Socket) ->
-    #user{id = erlang:unique_integer([positive, monotonic]), name = Name, socket = Socket}.
+new(Id, Name, Socket) ->
+    #user{id = Id, name = Name, socket = Socket}.
 
 get_id(User) ->
     User#user.id.
+
+check_id(User, Id) ->
+    User#user.id == Id.
 
 get_name(User) ->
     User#user.name.

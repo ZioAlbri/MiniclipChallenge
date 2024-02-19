@@ -21,27 +21,29 @@ init() ->
 
 
 create_room(Owner, IsPrivate) ->
-    Room = room:new(Owner, IsPrivate),
-    Id = room:get_id(Room),
+    Id = collection_utils:get_highest_id(rooms) + 1,
+    Room = room:new(Id, Owner, IsPrivate),
     ets:insert(rooms, {Id, Room}),
     io:format("User ~p has created room ~p~n", [Owner, Room]),
-    room_db:create_room(Room),
-    ok.
+    room_db:create_room(Room).
 
 
-destroy_room(Owner, RoomId) ->
+
+destroy_room(User, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
             RoomOwner = room:get_owner(Room),
+            OwnerId = user:get_id(RoomOwner),
+            UserId = user:get_id(User),
             Result = if
-                RoomOwner == Owner ->
+                OwnerId == UserId ->
                     ets:delete(rooms, RoomId),
                     room_db:delete_room(Room), 
-                    io:format("User ~p has destroyed room ~p~n", [Owner, Room]),
+                    io:format("User ~p has destroyed room ~p~n", [User, Room]),
                     ok;
                 true ->
                     % Do nothing or perform a different action for non-matching owner
-                    io:format("Owner ~p does not match expected owner ~p. No action performed.~n", [Owner, RoomOwner]),
+                    io:format("User ~p does not match expected owner ~p. No action performed.~n", [User, RoomOwner]),
                     non_matching
             end,
             Result;
