@@ -11,6 +11,11 @@ create_message(RoomId, Text) ->
     message_db:create_message(RoomId, Message),
     Message.
 
-get_messages(RoomId, User) ->
-    Result = message_db:get_messages(RoomId),
-    Result.
+get_messages(Room, User) ->
+    RoomId = room:get_id(Room),
+    case room:is_member(Room, User) of
+        true ->
+            {ok, message_db:get_messages(RoomId)};
+        false ->
+            error
+    end.

@@ -270,9 +270,14 @@ manage_listmessages_command(User) ->
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        case message_manager:get_messages(RoomId, User) of
-            Messages ->
-                send_messages(Socket, ["Room Messages:" | Messages]);
+        case room_manager:find_room_by_id(RoomId) of
+            {ok, Room} ->
+                case message_manager:get_messages(Room, User) of
+                    {ok, Messages} ->
+                        send_messages(Socket, ["Room Messages:" | Messages]);
+                    error ->
+                        send_string(Socket, "You can't see messages in rooms you are not member. ")
+                end;
             not_found ->
                 send_string(Socket, "Can't find the room. Try with another id. ")
         end

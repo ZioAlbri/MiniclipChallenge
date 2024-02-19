@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/2, update_sockets_for_user/1, get_rooms/1]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/2, update_sockets_for_user/1, get_rooms/1, find_room_by_id/1]).
 
 
 init() ->
