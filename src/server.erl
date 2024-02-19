@@ -9,7 +9,8 @@
         q -> Leave a joined room;
         m -> Send message in a room;
         p -> Send private message;
-        i -> Invite user to a room you own.
+        i -> Invite user to a room you own;
+        lm - > List a room's previous messages.
         ").
 
 start() ->
@@ -271,7 +272,7 @@ manage_listmessages_command(User) ->
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
         case message_manager:get_messages(RoomId, User) of
             Messages ->
-                send_messages(Socket, ["Room Messages: " | Messages]);
+                send_messages(Socket, ["Room Messages:" | Messages]);
             not_found ->
                 send_string(Socket, "Can't find the room. Try with another id. ")
         end
@@ -291,7 +292,8 @@ send_strings([Socket | Rest], Message) ->
 send_messages(_, []) ->
     ok;  % Base case: empty list
 send_messages(Socket, [Message | Rest]) ->
-    send_string(Socket, Message),
+    send_string(Socket, Message ++ "
+        "),
     send_messages(Socket, Rest).
 
 send_string(Socket, Value) ->
