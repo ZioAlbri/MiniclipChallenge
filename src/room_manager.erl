@@ -119,19 +119,12 @@ invite_user(Owner, User, RoomId) ->
 get_room_sockets(RoomId, User) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            IsPrivate = room:get_accessibility(Room),
-            case IsPrivate of
+            case room:is_member(Room, User) of
                 true ->
-                    case room:is_invited(Room, User) of
-                        true ->
-                            Sockets = room:get_members_sockets(Room),
-                            {ok, Sockets};
-                        false ->
-                            not_found
-                    end;
-                false ->
                     Sockets = room:get_members_sockets(Room),
-                    {ok, Sockets}
+                    {ok, Sockets};
+                false ->
+                    error
             end;
         not_found ->
             not_found

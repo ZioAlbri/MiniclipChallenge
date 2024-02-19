@@ -6,6 +6,7 @@
     get_members/1, 
     get_members_names/1, 
     get_members_sockets/1, 
+    is_member/2,
     update_members/2,
     get_accessibility/1, 
     join/2, 
@@ -50,6 +51,9 @@ get_members_names(Room) ->
 
 get_members_sockets(Room) ->
     [user:get_socket(User) || User <- Room#room.members].
+
+is_member(Room, User) ->
+    lists:any(fun(U) -> user:check_id(U, user:get_id(User)) end, Room#room.members).
 
 update_members(Room, UpdatedMembers) ->
     Room#room{members = UpdatedMembers}.

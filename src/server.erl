@@ -190,7 +190,7 @@ manage_sendmessage_command(User) ->
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        RoomSockets = room_manager:get_room_sockets(RoomId),
+        RoomSockets = room_manager:get_room_sockets(RoomId, User),
         case RoomSockets of
             {ok, Sockets} ->
                 send_string(Socket, "Type the message you want to send: "),
@@ -199,6 +199,8 @@ manage_sendmessage_command(User) ->
                 send_strings(Sockets, Message),
                 send_string(Socket, "Message sent. "),
                 message_manager:create_message(RoomId, Message);
+            error ->
+                send_string(Socket, "You can't send messages in rooms you are not member. ");
             not_found ->
                 send_string(Socket, "Can't find the room. Try with another id. ")
         end
