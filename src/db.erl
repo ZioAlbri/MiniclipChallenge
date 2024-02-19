@@ -18,7 +18,7 @@ create_table(TableName) ->
 
 
 get_all_items(TableName, OutputJsonFile) ->
-    GetAllRoomsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile ++ " " ++ ?ENDPOINT,
+    GetAllRoomsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(GetAllRoomsCommand),
     ok.
 

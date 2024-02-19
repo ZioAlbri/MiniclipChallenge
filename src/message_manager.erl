@@ -3,26 +3,11 @@
 
 
 init() ->
-    case ets:info(messages) of
-        undefined ->  % Check if the table does not exist
-            ets:new(messages, [named_table, set, public]);
-        _ ->
-            ok
-    end,
-    StoredMessages = message_db:init(),
-    lists:foreach(
-        fun(StoredMessage) ->
-            io:format("Found stored message in db: ~p~n", [StoredMessage]),
-            Id = message:get_id(StoredMessage),
-            ets:insert(messages, {Id, StoredMessage})
-        end,
-        StoredMessages
-    ).
+    message_db:init(),
+    ok.
 
 
 create_message(RoomId, Text) ->
-    Id = collection_utils:get_highest_id(messages) + 1,
-    Message = message:new(Id, RoomId, Text),
-    ets:insert(messages, {Id, Message}),
-    message_db:create_message(Message),
+    Message = message:new(lists:filter(fun(X) -> X /= $\r andalso X /= $\n end, Text)),
+    message_db:create_message(RoomId, Message),
     Message.

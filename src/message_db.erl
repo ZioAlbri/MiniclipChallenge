@@ -5,13 +5,15 @@ init() ->
     db:create_table("Message"),
     ok.
 
-get_messages(RoomId) ->
+get_messages(RoomId) -> 
     FileName = "all_messages_" + integer_to_list(RoomId) + ".json",
     db:get_all_items("Message", FileName),
     {ok, Data} = file:read_file(FileName),
-    StoredMessages = [user:transform_jsonitem_to_user(User) || User <- maps:get(<<"Items">>, jsx:decode(Data))],
+    RoomMessages = [Room || Room <- maps:get(<<"Items">>, jsx:decode(Data))],
+    %Messages = [message:transform_jsonitem_to_message(maps:get(<<"M">>, jsx:decode(Message))) || Message <- maps:get(<<"L">>, jsx:decode(RoomMessages))],
+    Messages = [message:transform_jsonitem_to_message(Message) || Message <- maps:get(<<"L">>, jsx:decode(RoomMessages))],
     file:delete(FileName),
-    StoredMessages.
+    Messages.
 
 create_message(RoomId, Message) ->
     OperationId = integer_to_list(erlang:unique_integer([positive, monotonic])),
@@ -28,7 +30,7 @@ create_message(RoomId, Message) ->
     AttributeExpNamesFileName = "message_names_" ++ integer_to_list(RoomId) ++ "_" ++ OperationId ++ ".json",
     file:write_file(AttributeExpNamesFileName, AttributeExpNames),
 
-    AttributeExpValues = "{\":empty_list\": {\"L\": []}, \":new_message\": {\"L\": [{\"M\": " ++ message_to_json(Message) ++ "}]}}",
+    AttributeExpValues = "{\":empty_list\": {\"L\": []}, \":new_message\": {\"L\": [" ++ message_to_json(Message) ++ "]}}",
     AttributeExpValuesFileName = "message_values_" ++ integer_to_list(RoomId) ++ "_" ++ OperationId ++ ".json",
     file:write_file(AttributeExpValuesFileName, AttributeExpValues),
 
@@ -41,5 +43,6 @@ create_message(RoomId, Message) ->
 
 
 message_to_json(Message) ->
-    JsonData = "{\"message\": {\"S\": \"" ++ Message ++ "\"}}",
+    %JsonData = "{\"N\": \"" ++ message:get_id(Message) ++ "\"}, {\"N\": \"" ++ message:get_roomId(Message) ++ "\"}, {\"S\": \"" ++ message:get_text(Message) ++ "\"}",
+    JsonData = "{\"S\": \"" ++ message:get_text(Message) ++ "\"}",
     JsonData.

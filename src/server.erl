@@ -19,6 +19,8 @@ start() ->
     io:format("Users manager initialized... ~n~n"),
     room_manager:init(),
     io:format("Rooms manager initialized... ~n~n"),
+    message_manager:init(),
+    io:format("Messages manager initialized... ~n~n"),
     accept_connections(ListenSocket).
 
 accept_connections(ListenSocket) ->
@@ -191,9 +193,10 @@ manage_sendmessage_command(User) ->
             {ok, Sockets} ->
                 send_string(Socket, "Type the message you want to send: "),
                 {ok, MessageData} = gen_tcp:recv(Socket, 0),
-                Message = user:get_name(User) ++ " from room " ++ integer_to_list(RoomId) ++ " says: " ++binary_to_list(MessageData), % 
+                Message = user:get_name(User) ++ " from room " ++ integer_to_list(RoomId) ++ " says: " ++binary_to_list(MessageData), 
                 send_strings(Sockets, Message),
-                send_string(Socket, "Message sent. ");
+                send_string(Socket, "Message sent. "),
+                message_manager:create_message(RoomId, Message);
             not_found ->
                 send_string(Socket, "Can't find the room. Try with another id. ")
         end
