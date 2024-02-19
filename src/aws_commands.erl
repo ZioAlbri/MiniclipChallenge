@@ -5,8 +5,11 @@ execute_command(Command) ->
     Result = remove_newlines(Command),
     case os:cmd(Result) of
         Output ->
-            io:format("~nCommand response: ~n~p~n~n", [Output]),
-            string:tokens(Output, "\n")
+            io:format("Executed aws command"),
+            io:format("Output: ~p~n", [Output]),
+            string:tokens(Output, "\n");
+        _ ->
+            io:format("Aws command error")
     end.
 
 remove_newlines(String) ->

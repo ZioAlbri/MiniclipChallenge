@@ -13,7 +13,7 @@
         ").
 
 start() ->
-    {ok, ListenSocket} = gen_tcp:listen(12345, [binary, {active, false}]),
+    {ok, ListenSocket} = gen_tcp:listen(12346, [binary, {active, false}]),
     io:format("Server listening on port 12345... ~n~n"),
     user_manager:init(),
     io:format("Users manager initialized... ~n~n"),
@@ -34,7 +34,7 @@ handle_connection(Socket) ->
             ClientName = string:trim(binary_to_list(Data)),
             io:format("Connected: ~s~n", [ClientName]),
             %% Store user info for private messages
-            User = user_manager:create_user(ClientName, Socket),
+            User = login(ClientName, Socket),
             %% Keep handling data from the connected client
             handle_data(User);
         {error, Reason} ->
@@ -48,6 +48,17 @@ get_client_name(Socket) ->
     send_string(Socket, "Enter your name: "),
     %% Receive the client's name
     gen_tcp:recv(Socket, 0).
+
+login(ClientName, Socket) ->
+    case user_manager:find_user_by_name(ClientName) of
+        {ok, U} ->
+            User = user_manager:update_user(U, Socket),
+            room_manager:update_sockets_for_user(User),
+            send_string(Socket, "Welcome back!");
+        not_found ->
+            User = user_manager:create_user(ClientName, Socket)
+    end,
+    User.
 
 handle_data(User) ->
     send_string(user:get_socket(User), ?COMMANDS),
@@ -243,7 +254,6 @@ manage_inviteuser_command(User) ->
         error:badarg ->
             send_string(Socket, "You have to insert an integer as room id and user id. ")
     end.
-
 
 
 

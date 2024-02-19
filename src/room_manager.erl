@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, get_rooms/1]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, update_sockets_for_user/1, get_rooms/1]).
 
 
 init() ->
@@ -12,7 +12,9 @@ init() ->
     StoredRooms = room_db:init(),
     lists:foreach(
         fun(StoredRoom) ->
-            ets:insert(rooms, StoredRoom)
+            io:format("Found stored room in db: ~p~n", [StoredRoom]),
+            Id = room:get_id(StoredRoom),
+            ets:insert(rooms, {Id, StoredRoom})
         end,
         StoredRooms
     ).
@@ -121,6 +123,51 @@ get_room_sockets(RoomId) ->
             not_found
     end.
 
+
+update_sockets_for_user(User) ->
+    UserName = user:get_name(User),
+    lists:foreach(
+        fun({_, Room}) ->
+
+            io:format("Room: ~p~n", [Room]),
+
+            UpdatedMembers = lists:map(
+                fun(RoomMember) ->
+                    case user:check_name(RoomMember, UserName) of
+                        true ->
+                            io:format("Socket modified"),
+                            user:set_socket(RoomMember, user:get_socket(User));
+                        false ->
+                            io:format("Socket NOT modified"),
+                            RoomMember
+                    end
+                end,
+                room:get_members(Room)
+            ),
+
+            io:format("Updated Members: ~p~n", [UpdatedMembers]),
+
+            UpdatedInvited = lists:map(
+                fun(RoomInvited) ->
+                    case user:check_name(RoomInvited, UserName) of
+                        true ->
+                            user:set_socket(RoomInvited, user:get_socket(User));
+                        false ->
+                            RoomInvited
+                    end
+                end,
+                room:get_invited(Room)
+            ),
+
+            io:format("Updated Invited: ~p~n", [UpdatedInvited]),
+
+            UpdatedRoom = room:update_members(Room, UpdatedMembers),
+            UpdatedRoom2 = room:update_invited(UpdatedRoom, UpdatedInvited),
+            io:format("UpdatedRoom: ~p~n", [UpdatedRoom2]),
+            ets:insert(rooms, {room:get_id(UpdatedRoom2), UpdatedRoom2})
+        end,
+        ets:tab2list(rooms)
+    ).
 
 
 get_rooms(User) ->
