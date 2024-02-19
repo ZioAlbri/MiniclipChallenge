@@ -1,5 +1,5 @@
 -module(room_manager).
--export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/1, update_sockets_for_user/1, get_rooms/1]).
+-export([init/0, create_room/2, destroy_room/2, join_room/2, leave_room/2, invite_user/3, get_room_sockets/2, update_sockets_for_user/1, get_rooms/1]).
 
 
 init() ->
@@ -116,11 +116,23 @@ invite_user(Owner, User, RoomId) ->
     end.
 
 
-get_room_sockets(RoomId) ->
+get_room_sockets(RoomId, User) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
-            Sockets = room:get_members_sockets(Room),
-            {ok, Sockets};
+            IsPrivate = room:get_accessibility(Room),
+            case IsPrivate of
+                true ->
+                    case room:is_invited(Room, User) of
+                        true ->
+                            Sockets = room:get_members_sockets(Room),
+                            {ok, Sockets};
+                        false ->
+                            not_found
+                    end;
+                false ->
+                    Sockets = room:get_members_sockets(Room),
+                    {ok, Sockets}
+            end;
         not_found ->
             not_found
     end.

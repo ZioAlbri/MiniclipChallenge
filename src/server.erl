@@ -101,6 +101,8 @@ manage_command(Data, User) ->
             manage_sendprivatemessage_command(User);
         "i" -> 
             manage_inviteuser_command(User);
+        "lm" -> 
+            manage_listmessages_command(User);
         _ ->
             send_string(user:get_socket(User), "Wrong command. Please try again.")
     end. 
@@ -259,12 +261,36 @@ manage_inviteuser_command(User) ->
     end.
 
 
+manage_listmessages_command(User) ->
+    Socket = user:get_socket(User),
+    send_string(Socket, "Type the id of the room where you want to read messages: "),
+    {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
+    try
+        RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
+        case message_manager:get_messages(RoomId, User) of
+            Messages ->
+                send_messages(Socket, ["Room Messages: " | Messages]);
+            not_found ->
+                send_string(Socket, "Can't find the room. Try with another id. ")
+        end
+    catch
+        error:badarg ->
+            send_string(Socket, "You have to insert an integer as room id. ")
+    end.
+
+
 
 send_strings([], _) ->
     ok;  % Base case: empty list
 send_strings([Socket | Rest], Message) ->
     send_string(Socket, Message),
     send_strings(Rest, Message).
+
+send_messages(_, []) ->
+    ok;  % Base case: empty list
+send_messages(Socket, [Message | Rest]) ->
+    send_string(Socket, Message),
+    send_messages(Socket, Rest).
 
 send_string(Socket, Value) ->
     gen_tcp:send(Socket, Value).

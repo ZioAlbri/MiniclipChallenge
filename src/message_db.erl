@@ -6,13 +6,19 @@ init() ->
     ok.
 
 get_messages(RoomId) -> 
-    FileName = "all_messages_" + integer_to_list(RoomId) + ".json",
-    db:get_all_items("Message", FileName),
-    {ok, Data} = file:read_file(FileName),
-    RoomMessages = [Room || Room <- maps:get(<<"Items">>, jsx:decode(Data))],
-    %Messages = [message:transform_jsonitem_to_message(maps:get(<<"M">>, jsx:decode(Message))) || Message <- maps:get(<<"L">>, jsx:decode(RoomMessages))],
-    Messages = [message:transform_jsonitem_to_message(Message) || Message <- maps:get(<<"L">>, jsx:decode(RoomMessages))],
-    file:delete(FileName),
+    OperationId = integer_to_list(erlang:unique_integer([positive, monotonic])),
+
+    OutputFile = "all_messages_" ++ integer_to_list(RoomId) ++ "_" ++ OperationId ++ ".json",
+
+    KeyData = "{\"id\": {\"N\": \"" ++ integer_to_list(RoomId) ++ "\"}}",
+    KeyDataFileName = "message_key_" ++ integer_to_list(RoomId) ++ "_" ++ OperationId ++ ".json",
+    file:write_file(KeyDataFileName, KeyData),
+
+    db:get_item("Message", KeyDataFileName, OutputFile), 
+    {ok, Data} = file:read_file(OutputFile),
+    Messages = [message:get_text(message:transform_jsonitem_to_message(Message)) || Message <- maps:get(<<"L">>, maps:get(<<"messages">>, maps:get(<<"Item">>, jsx:decode(Data))))],
+    file:delete(OutputFile),
+    file:delete(KeyDataFileName),
     Messages.
 
 create_message(RoomId, Message) ->
@@ -44,5 +50,5 @@ create_message(RoomId, Message) ->
 
 message_to_json(Message) ->
     %JsonData = "{\"N\": \"" ++ message:get_id(Message) ++ "\"}, {\"N\": \"" ++ message:get_roomId(Message) ++ "\"}, {\"S\": \"" ++ message:get_text(Message) ++ "\"}",
-    JsonData = "{\"S\": \"" ++ message:get_text(Message) ++ "\"}",
+    JsonData = "{\"S\": \"" ++ message:get_text(Message) ++ " \"}",
     JsonData.

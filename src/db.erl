@@ -1,5 +1,5 @@
 -module(db).
--export([create_table/1, get_all_items/2, create_item/2, delete_item/2, append_item/5]).
+-export([create_table/1, get_all_items/2, get_item/3, create_item/2, delete_item/2, append_item/5]).
 
 -define(ENDPOINT, "http://localhost:8000").
 
@@ -18,10 +18,14 @@ create_table(TableName) ->
 
 
 get_all_items(TableName, OutputJsonFile) ->
-    GetAllRoomsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
-    aws_commands:execute_command(GetAllRoomsCommand),
+    GetAllItemsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
+    aws_commands:execute_command(GetAllItemsCommand),
     ok.
 
+get_item(TableName, KeyJsonFile, OutputJsonFile) ->
+    GetItemCommand = "aws dynamodb get-item --table-name " ++ TableName ++ " --key file://" ++ KeyJsonFile ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
+    aws_commands:execute_command(GetItemCommand),
+    ok.
 
 create_item(TableName, InputJsonFile) ->
     CreateRoomCommand = "aws dynamodb put-item " 
