@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  KeyPairName:
+    Type: String
+    Description: Name of an existing EC2 Key Pair for RDP access
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair.
+    Default: EC2MiniclipChallenge  # Provide a default value or replace with the desired default
+
+Resources:
+  MyEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0a658b57c7651349f  # Replace with the desired Windows Server 2019 Base AMI ID
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      UserData:
+        Fn::Base64: !Sub |
+          <powershell>
+          # Set execution policy for PowerShell scripts
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+
+          # Install Chocolatey
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+          # Install Git
+          choco install git -y
+
+          # Install AWS CLI
+          choco install awscli -y
+
+          # AWS CLI configuration
+          aws configure set aws_access_key_id AKIAZI2LIYAB65FGU4VK
+          aws configure set aws_secret_access_key L5Kw+QsbOJ+VQYblcFWtRgsSq3wS9mJxKm3gMu36
+          aws configure set region eu-north-1
+          aws configure set output json
+
+          # Additional setup for your rebar3 application can be added here
+          git clone https://github.com/ZioAlbri/MiniclipChallenge.git
+          cd rebar3-project
+          .\rebar3 get-deps
+          .\rebar3 compile
+          .\rebar3 release
+
+          # Start your application (replace with your actual start command)
+          .\rebar3 shell
+          </powershell>
+
+      Outputs:
+        InstanceId:
+          Description: InstanceId of the newly created EC2 instance
+          Value: !Ref MyEC2Instance
+        PublicIP:
+          Description: Public IP address of the newly created EC2 instance
+          Value: !GetAtt MyEC2Instance.PublicIp
+
+    
