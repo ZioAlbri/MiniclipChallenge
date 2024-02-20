@@ -56,9 +56,7 @@ find_user_by_id(UserId) ->
     end.
 
 find_user_by_name(UserName) ->
-    io:format("All users: ~p~n", [ets:tab2list(users)]),
     Result = user:find_by_name(UserName, ets:tab2list(users)),
-    io:format("Find user by name result: ~p~n", [Result]),
     case Result of
         [{_, User}] ->
             {ok, User};

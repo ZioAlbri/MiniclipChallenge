@@ -14,7 +14,7 @@
         ").
 
 start() ->
-    {ok, ListenSocket} = gen_tcp:listen(12346, [binary, {active, false}]),
+    {ok, ListenSocket} = gen_tcp:listen(12345, [binary, {active, false}]),
     io:format("Server listening on port 12345... ~n~n"),
     user_manager:init(),
     io:format("Users manager initialized... ~n~n"),
@@ -212,11 +212,11 @@ manage_sendmessage_command(User) ->
 
 manage_sendprivatemessage_command(User) ->
     Socket = user:get_socket(User),
-    send_string(Socket, "Type the id of the user: "),
-    {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
+    send_string(Socket, "Type the name of the user: "),
+    {ok, DastinationUserNameData} = gen_tcp:recv(Socket, 0),
     try
-        DestinationUserId = list_to_integer(string:trim(binary_to_list(DastinationUserIdData))),
-        DestinationUserResult = user_manager:find_user_by_id(DestinationUserId),
+        DestinationUserName = string:trim(binary_to_list(DastinationUserNameData)),
+        DestinationUserResult = user_manager:find_user_by_name(DestinationUserName),
         case DestinationUserResult of
             {ok, DestinationUser} ->
                 send_string(Socket, "Type the message you want to send: "),
@@ -225,11 +225,11 @@ manage_sendprivatemessage_command(User) ->
                 send_string(user:get_socket(DestinationUser), Message),
                 send_string(Socket, "Message sent. ");
             not_found ->
-                send_string(Socket, "Can't find the user. Try with another id. ")
+                send_string(Socket, "Can't find the user. Try with another name. ")
         end
     catch
         error:badarg ->
-            send_string(Socket, "You have to insert an integer as user id. ")
+            send_string(Socket, "You have to insert a string as user name. ")
     end.
 
 
@@ -237,12 +237,12 @@ manage_inviteuser_command(User) ->
     Socket = user:get_socket(User),
     send_string(Socket, "Type the room id: "),
     {ok, RoomIdData} = gen_tcp:recv(Socket, 0),
-    send_string(Socket, "Type the user id: "),
-    {ok, DastinationUserIdData} = gen_tcp:recv(Socket, 0),
+    send_string(Socket, "Type the user name: "),
+    {ok, DastinationUserNameData} = gen_tcp:recv(Socket, 0),
     try
         RoomId = list_to_integer(string:trim(binary_to_list(RoomIdData))),
-        DestinationUserId = list_to_integer(string:trim(binary_to_list(DastinationUserIdData))),
-        DestinationUserResult = user_manager:find_user_by_id(DestinationUserId),
+        DestinationUserName = string:trim(binary_to_list(DastinationUserNameData)),
+        DestinationUserResult = user_manager:find_user_by_name(DestinationUserName),
         case DestinationUserResult of
             {ok, DestinationUser} ->
                 Result = room_manager:invite_user(User, DestinationUser, RoomId),
@@ -256,11 +256,11 @@ manage_inviteuser_command(User) ->
                         send_string(Socket, "Can't find the room. Try with another id. ")
                 end;
             not_found ->
-                send_string(Socket, "Can't find the user. Try with another id. ")
+                send_string(Socket, "Can't find the user. Try with another name. ")
         end
     catch
         error:badarg ->
-            send_string(Socket, "You have to insert an integer as room id and user id. ")
+            send_string(Socket, "You have to insert an integer as room id and a string as user id. ")
     end.
 
 

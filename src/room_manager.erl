@@ -99,8 +99,10 @@ invite_user(Owner, User, RoomId) ->
     case find_room_by_id(RoomId) of
         {ok, Room} ->
             RoomOwner = room:get_owner(Room),
+            OwnerId = user:get_id(RoomOwner),
+            UserId = user:get_id(Owner),
             if
-                RoomOwner == Owner ->
+                OwnerId == UserId ->
                     UpdatedRoom = room:invite(User, Room), 
                     ets:insert(rooms, {RoomId, UpdatedRoom}),
                     room_db:update_room(UpdatedRoom),
@@ -136,23 +138,17 @@ update_sockets_for_user(User) ->
     lists:foreach(
         fun({_, Room}) ->
 
-            io:format("Room: ~p~n", [Room]),
-
             UpdatedMembers = lists:map(
                 fun(RoomMember) ->
                     case user:check_name(RoomMember, UserName) of
                         true ->
-                            io:format("Socket modified"),
                             user:set_socket(RoomMember, user:get_socket(User));
                         false ->
-                            io:format("Socket NOT modified"),
                             RoomMember
                     end
                 end,
                 room:get_members(Room)
             ),
-
-            io:format("Updated Members: ~p~n", [UpdatedMembers]),
 
             UpdatedInvited = lists:map(
                 fun(RoomInvited) ->
@@ -166,11 +162,8 @@ update_sockets_for_user(User) ->
                 room:get_invited(Room)
             ),
 
-            io:format("Updated Invited: ~p~n", [UpdatedInvited]),
-
             UpdatedRoom = room:update_members(Room, UpdatedMembers),
             UpdatedRoom2 = room:update_invited(UpdatedRoom, UpdatedInvited),
-            io:format("UpdatedRoom: ~p~n", [UpdatedRoom2]),
             ets:insert(rooms, {room:get_id(UpdatedRoom2), UpdatedRoom2})
         end,
         ets:tab2list(rooms)

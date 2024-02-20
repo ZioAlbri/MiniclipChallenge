@@ -4,17 +4,24 @@
 -define(ENDPOINT, "http://localhost:8000").
 
 create_table(TableName) ->
+    try
         CreateTableCommand = "aws dynamodb create-table --table-name " ++ TableName ++ " 
-        --attribute-definitions 
-            AttributeName=id,AttributeType=N
-        --key-schema 
-            AttributeName=id,KeyType=HASH 
-        --provisioned-throughput 
-            ReadCapacityUnits=5,WriteCapacityUnits=5
-        --endpoint " ++ ?ENDPOINT,
+            --attribute-definitions 
+                AttributeName=id,AttributeType=N
+            --key-schema 
+                AttributeName=id,KeyType=HASH 
+            --provisioned-throughput 
+                ReadCapacityUnits=5,WriteCapacityUnits=5
+            --endpoint " ++ ?ENDPOINT,
 
-    aws_commands:execute_command(CreateTableCommand),
-    ok.
+        aws_commands:execute_command(CreateTableCommand),
+        ok
+    catch
+        error:Reason ->
+            Reason;
+        _ -> 
+            ok
+    end.
 
 
 get_all_items(TableName, OutputJsonFile) ->
