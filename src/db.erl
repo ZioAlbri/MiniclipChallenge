@@ -11,8 +11,8 @@ create_table(TableName) ->
             --key-schema 
                 AttributeName=id,KeyType=HASH 
             --provisioned-throughput 
-                ReadCapacityUnits=5,WriteCapacityUnits=5
-            --endpoint " ++ ?ENDPOINT,
+                ReadCapacityUnits=5,WriteCapacityUnits=5",
+            %--endpoint " ++ ?ENDPOINT,
 
         aws_commands:execute_command(CreateTableCommand),
         ok
@@ -25,20 +25,20 @@ create_table(TableName) ->
 
 
 get_all_items(TableName, OutputJsonFile) ->
-    GetAllItemsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
+    GetAllItemsCommand = "aws dynamodb scan --table-name " ++ TableName ++ " --output json > " ++ OutputJsonFile,% ++ " --endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(GetAllItemsCommand),
     ok.
 
 get_item(TableName, KeyJsonFile, OutputJsonFile) ->
-    GetItemCommand = "aws dynamodb get-item --table-name " ++ TableName ++ " --key file://" ++ KeyJsonFile ++ " --output json > " ++ OutputJsonFile ++ " --endpoint " ++ ?ENDPOINT,
+    GetItemCommand = "aws dynamodb get-item --table-name " ++ TableName ++ " --key file://" ++ KeyJsonFile ++ " --output json > " ++ OutputJsonFile,% ++ " --endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(GetItemCommand),
     ok.
 
 create_item(TableName, InputJsonFile) ->
     CreateRoomCommand = "aws dynamodb put-item " 
         "--table-name " ++ TableName ++ " " 
-        "--item file://" ++ InputJsonFile ++ " "
-        "--endpoint " ++ ?ENDPOINT,
+        "--item file://" ++ InputJsonFile ++ " ",
+        %"--endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(CreateRoomCommand),
     ok.
 
@@ -46,8 +46,8 @@ create_item(TableName, InputJsonFile) ->
 delete_item(TableName, InputJsonFile) ->
     DeleteRoomCommand = "aws dynamodb delete-item " 
         "--table-name " ++ TableName ++ " " 
-        "--key file://" ++ InputJsonFile ++ " "
-        "--endpoint " ++ ?ENDPOINT,
+        "--key file://" ++ InputJsonFile ++ " ",
+        %"--endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(DeleteRoomCommand),
     ok.
 
@@ -57,7 +57,7 @@ append_item(TableName, KeyJsonFile, UpdateExpJsonFile, AttributeExpNamesJsonFile
         "--key file://" ++ KeyJsonFile ++ " "
         "--update-expression file://" ++ UpdateExpJsonFile ++ " "
         "--expression-attribute-names file://" ++ AttributeExpNamesJsonFile ++ " "
-        "--expression-attribute-values file://" ++ AttributeExpValJsonFile ++ " "
-        "--endpoint " ++ ?ENDPOINT,
+        "--expression-attribute-values file://" ++ AttributeExpValJsonFile ++ " ",
+        %"--endpoint " ++ ?ENDPOINT,
     aws_commands:execute_command(AppendItemCommand),
     ok.
