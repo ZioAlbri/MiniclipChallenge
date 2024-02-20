@@ -2,7 +2,7 @@
 -export([init/0, get_messages/1, create_message/2, message_to_json/1]).
 
 init() ->
-    db:create_table("Message"),
+    %db:create_table("Message"),
     ok.
 
 get_messages(RoomId) -> 

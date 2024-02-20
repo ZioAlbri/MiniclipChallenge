@@ -2,7 +2,7 @@
 -export([init/0, get_users/0, create_user/1, user_to_json/1, users_to_json/1]).
 
 init() ->
-    db:create_table("User"),
+    %db:create_table("User"),
     StoredUsers = get_users(),
     StoredUsers.
 

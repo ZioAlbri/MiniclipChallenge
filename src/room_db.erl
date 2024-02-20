@@ -2,7 +2,7 @@
 -export([init/0, get_rooms/0, create_room/1, update_room/1, delete_room/1]).
 
 init() ->
-    db:create_table("Room"),
+    %db:create_table("Room"),
     StoredRooms = get_rooms(),
     StoredRooms.
 
