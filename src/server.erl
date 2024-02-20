@@ -302,4 +302,9 @@ send_messages(Socket, [Message | Rest]) ->
     send_messages(Socket, Rest).
 
 send_string(Socket, Value) ->
-    gen_tcp:send(Socket, Value).
+    case Socket of
+        undefined ->
+            ok;
+        _ ->
+            gen_tcp:send(Socket, Value)
+    end.
