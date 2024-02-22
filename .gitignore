@@ -19,4 +19,5 @@ logs
 rebar3.crashdump
 *~
 rebar.lock
-ec2script.yaml
+ec2script_windows.yaml
+ec2script_linux.yaml

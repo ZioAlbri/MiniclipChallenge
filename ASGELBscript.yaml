@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Auto Scaling Group with Elastic Load Balancer and Existing EC2 Instance'
+
+Parameters:
+  AMIId:
+    Type: String
+    Description: 'AMI ID for the EC2 instances'
+
+Resources:
+  MySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: 'vpc-036b2500cb7a2ab8f'
+      GroupDescription: 'Security group for the EC2 instances'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  MyLaunchConfiguration:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      ImageId: !Ref AMIId
+      InstanceType: 't3.micro'
+      SecurityGroups:
+        - !Ref MySecurityGroup
+
+  MyLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+    Properties:
+      AvailabilityZones:
+        - !Sub '${AWS::Region}a'
+      Listeners:
+        - LoadBalancerPort: 80
+          InstancePort: 80
+          Protocol: HTTP
+      HealthCheck:
+        Target: 'HTTP:80/'
+        HealthyThreshold: '3'
+        UnhealthyThreshold: '5'
+        Interval: '30'
+        Timeout: '5'
+
+  MyAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AvailabilityZones:
+        - !Sub '${AWS::Region}a'
+      LaunchConfigurationName: !Ref MyLaunchConfiguration
+      MinSize: '2'
+      MaxSize: '4'
+      DesiredCapacity: '2'
+      LoadBalancerNames:
+        - !Ref MyLoadBalancer
+      VPCZoneIdentifier:
+        - subnet-07bb0cc4528e25e4b
+        - subnet-0f13f85ad6bbbc318
+        - subnet-0bbb8c14f2a39cc1a
+
+  ExistingEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceId: 'i-084a870c91b411b2f'  
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
